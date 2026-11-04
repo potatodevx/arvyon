@@ -30,9 +30,9 @@ const SiteThreadScene = dynamic(() => import("@/components/site-thread-scene"), 
   loading: () => <RibbonFallback />,
 });
 
-const HeroSilkField = dynamic(() => import("@/components/hero-silk-field"), {
+const HeroThreadForm = dynamic(() => import("@/components/hero-thread-form"), {
   ssr: false,
-  loading: () => <div className="hero-field hero-field-fallback" aria-hidden="true" />,
+  loading: () => <div className="hero-form hero-form-fallback" aria-hidden="true" />,
 });
 
 const serviceIcons = {
@@ -61,7 +61,7 @@ export default function Home() {
 
         <main id="main-content" tabIndex={-1}>
         <section className="hero" id="top" data-chapter="0">
-          <HeroSilkField />
+          <HeroThreadForm threads={170} mobileThreads={110} />
           <div className="hero-copy">
             <p className="eyebrow"><span /> Independent technology studio</p>
             <h1 className="hero-title">

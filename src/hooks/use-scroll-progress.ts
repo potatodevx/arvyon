@@ -12,9 +12,12 @@ export function useScrollProgress() {
     let animationFrame = 0;
     let previousY = window.scrollY;
     let maxScroll = 1;
+    let threadRevealStart = window.innerHeight * 0.55;
 
     const updateMaxScroll = () => {
       maxScroll = Math.max(root.scrollHeight - window.innerHeight, 1);
+      const hero = document.getElementById("top");
+      threadRevealStart = (hero?.offsetHeight ?? window.innerHeight) * 0.55;
     };
 
     const update = () => {
@@ -24,6 +27,7 @@ export function useScrollProgress() {
 
       root.toggleAttribute("data-header-frosted", currentY > window.innerHeight * 0.45);
       root.toggleAttribute("data-header-hidden", currentY > 120 && currentY > previousY + 2);
+      root.toggleAttribute("data-thread-visible", currentY >= threadRevealStart);
       previousY = currentY;
     };
 
@@ -51,6 +55,7 @@ export function useScrollProgress() {
       root.style.removeProperty("--scroll-progress");
       root.removeAttribute("data-header-frosted");
       root.removeAttribute("data-header-hidden");
+      root.removeAttribute("data-thread-visible");
     };
   }, []);
 }
