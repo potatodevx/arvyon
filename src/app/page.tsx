@@ -19,6 +19,8 @@ import { useScrollProgress } from "@/hooks/use-scroll-progress";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { useStoryChapter } from "@/hooks/use-story-chapter";
 import { MagneticLink } from "@/components/magnetic-link";
+import { CustomCursor } from "@/components/custom-cursor";
+import { HeroPreloader } from "@/components/hero-preloader";
 import { RibbonFallback } from "@/components/ribbon-fallback";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -26,6 +28,11 @@ import { SiteHeader } from "@/components/site-header";
 const SiteThreadScene = dynamic(() => import("@/components/site-thread-scene"), {
   ssr: false,
   loading: () => <RibbonFallback />,
+});
+
+const HeroSilkField = dynamic(() => import("@/components/hero-silk-field"), {
+  ssr: false,
+  loading: () => <div className="hero-field hero-field-fallback" aria-hidden="true" />,
 });
 
 const serviceIcons = {
@@ -45,6 +52,8 @@ export default function Home() {
     <>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <div className="site-shell">
+        <HeroPreloader />
+        <CustomCursor />
         <div className="scroll-indicator" aria-hidden="true" />
         <div className="site-thread" aria-hidden="true"><SiteThreadScene /></div>
         <SiteHeader home />
@@ -52,7 +61,7 @@ export default function Home() {
 
         <main id="main-content" tabIndex={-1}>
         <section className="hero" id="top" data-chapter="0">
-          <div className="hero-grid" aria-hidden="true" />
+          <HeroSilkField />
           <div className="hero-copy">
             <p className="eyebrow"><span /> Independent technology studio</p>
             <h1 className="hero-title">
@@ -69,10 +78,7 @@ export default function Home() {
           </div>
 
           <p className="scene-caption"><span className="caption-dot" /> Every idea starts as a loose thread.</p>
-          <div className="hero-footer">
-            <p>Strategy · Design · Technology</p>
-            <a href="#manifesto" aria-label="Scroll to the introduction"><ArrowDown size={18} /> Scroll to explore</a>
-          </div>
+          <a className="hero-scroll-cue" href="#manifesto" aria-label="Scroll to the point of view"><span aria-hidden="true" />Scroll</a>
         </section>
 
         <section className="manifesto section" id="manifesto" data-chapter="1">
