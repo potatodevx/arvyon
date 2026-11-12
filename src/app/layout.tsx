@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { JetBrains_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import "./globals.css";
+
+const techMono = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-tech",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://xyzinnovations.com"),
@@ -21,7 +28,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={techMono.variable}>
       <body>{children}</body>
     </html>
   );

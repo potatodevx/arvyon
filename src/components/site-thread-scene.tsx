@@ -2,7 +2,7 @@
 
 import { Environment } from "@react-three/drei";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { type MutableRefObject, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   BufferAttribute,
   BufferGeometry,
@@ -307,6 +307,9 @@ function useSceneSignals(enablePointer: boolean, freezeAtResult: boolean) {
     let maxScroll = 1;
     let renderFrame = 0;
     let introFrame = 0;
+    const root = document.documentElement;
+    const threadElement = document.querySelector<HTMLElement>(".site-thread");
+    let ribbonActive = root.hasAttribute("data-thread-visible") && !threadElement?.classList.contains("is-complete");
     const introStart = performance.now();
     const updateMaxScroll = () => { maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1); };
     const requestRender = () => {
@@ -323,16 +326,29 @@ function useSceneSignals(enablePointer: boolean, freezeAtResult: boolean) {
     };
     const onResize = () => { updateMaxScroll(); requestRender(); };
     const onPointerMove = (event: PointerEvent) => {
+      if (!ribbonActive) return;
       pointer.current.set(event.clientX / window.innerWidth - 0.5, event.clientY / window.innerHeight - 0.5);
       requestRender();
     };
-    const onPointerLeave = () => { pointer.current.set(0, 0); requestRender(); };
+    const onPointerLeave = () => {
+      if (!ribbonActive) return;
+      pointer.current.set(0, 0);
+      requestRender();
+    };
+    const updateRibbonActivity = () => {
+      ribbonActive = root.hasAttribute("data-thread-visible") && !threadElement?.classList.contains("is-complete");
+      if (!ribbonActive) pointer.current.set(0, 0);
+    };
     const resizeObserver = new ResizeObserver(onResize);
+    const rootObserver = new MutationObserver(updateRibbonActivity);
+    const threadObserver = threadElement ? new MutationObserver(updateRibbonActivity) : null;
 
     updateMaxScroll();
     requestRender();
     playIntro();
     resizeObserver.observe(document.documentElement);
+    rootObserver.observe(root, { attributes: true, attributeFilter: ["data-thread-visible"] });
+    if (threadElement) threadObserver?.observe(threadElement, { attributes: true, attributeFilter: ["class"] });
     window.addEventListener("scroll", requestRender, { passive: true });
     window.addEventListener("resize", onResize);
     if (enablePointer) {
@@ -342,6 +358,8 @@ function useSceneSignals(enablePointer: boolean, freezeAtResult: boolean) {
 
     return () => {
       resizeObserver.disconnect();
+      rootObserver.disconnect();
+      threadObserver?.disconnect();
       window.removeEventListener("scroll", requestRender);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("pointermove", onPointerMove);
@@ -354,49 +372,16 @@ function useSceneSignals(enablePointer: boolean, freezeAtResult: boolean) {
   return { progress, pointer };
 }
 
-function RibbonBow({ center, width, progress, freezeAtResult }: {
-  center: Vector3;
-  width: number;
-  progress: MutableRefObject<number>;
-  freezeAtResult: boolean;
-}) {
-  const lastReveal = useRef(-1);
-  const ribbons = useMemo(() => {
-    const point = (x: number, y: number, z = 0) => new Vector3(center.x + x, center.y + y, z);
-    const paths = [
-      new CatmullRomCurve3([point(0, 0), point(-1.55, 1.18, 0.1), point(-3, 0), point(-1.65, -1.25, -0.1), point(0, 0)]),
-      new CatmullRomCurve3([point(0, 0), point(1.55, 1.18, -0.1), point(3, 0), point(1.65, -1.25, 0.1), point(0, 0)]),
-      new CatmullRomCurve3([point(-0.08, -0.03), point(-0.85, -1.75, 0), point(-1.7, -2.45, -0.05)]),
-      new CatmullRomCurve3([point(0.08, -0.03), point(0.85, -1.75, 0), point(1.7, -2.45, 0.05)]),
-    ];
-    return paths.map((path, index) => createRibbon(path, width * (index < 2 ? 0.78 : 0.56), index < 2 ? 160 : 90));
-  }, [center, width]);
-
-  useEffect(() => () => ribbons.forEach((ribbon) => ribbon.geometry.dispose()), [ribbons]);
-  useFrame(() => {
-    const reveal = freezeAtResult ? 1 : clamp01((progress.current - 0.85) / 0.15);
-    if (Math.abs(reveal - lastReveal.current) > 0.0005) {
-      ribbons.forEach((ribbon) => applyReveal(ribbon, reveal));
-      lastReveal.current = reveal;
-    }
-  });
-
-  return <group>{ribbons.map((ribbon, index) => <mesh geometry={ribbon.geometry} key={index}><meshPhysicalMaterial {...silkMaterial} /></mesh>)}</group>;
-}
-
 function RibbonJourney({ compact, pointerEnabled, reducedMotion }: { compact: boolean; pointerEnabled: boolean; reducedMotion: boolean }) {
   const segments = compact ? 500 : 900;
   const width = compact ? RIBBON_WIDTH * 0.62 : RIBBON_WIDTH;
   const mesh = useRef<Mesh>(null);
   const lastReveal = useRef(-1);
   const { progress, pointer } = useSceneSignals(pointerEnabled, reducedMotion);
-  const { ribbon, bowCenter } = useMemo(() => {
+  const ribbon = useMemo(() => {
     const aspect = window.innerWidth / Math.max(window.innerHeight, 1);
     const storyCurve = createStoryCurve(Math.min(1.15, aspect / 1.6));
-    return {
-      ribbon: createRibbon(storyCurve, width, segments),
-      bowCenter: storyCurve.getPointAt(1, new Vector3()),
-    };
+    return createRibbon(storyCurve, width, segments);
   }, [segments, width]);
 
   useEffect(() => () => ribbon.geometry.dispose(), [ribbon]);
@@ -425,12 +410,7 @@ function RibbonJourney({ compact, pointerEnabled, reducedMotion }: { compact: bo
     state.camera.lookAt(targetX, state.camera.position.y, 0);
   });
 
-  return (
-    <group>
-      <mesh ref={mesh} geometry={ribbon.geometry} frustumCulled={false} visible={false}><meshPhysicalMaterial {...silkMaterial} /></mesh>
-      <RibbonBow center={bowCenter} width={width} progress={progress} freezeAtResult={reducedMotion} />
-    </group>
-  );
+  return <mesh ref={mesh} geometry={ribbon.geometry} frustumCulled={false} visible={false}><meshPhysicalMaterial {...silkMaterial} /></mesh>;
 }
 
 export default function SiteThreadScene() {

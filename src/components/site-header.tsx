@@ -8,13 +8,16 @@ type SiteHeaderProps = {
 };
 
 const links = [
+  { href: "#top", label: "Home" },
   { href: "#work", label: "Work" },
   { href: "#services", label: "Services" },
   { href: "#approach", label: "Approach" },
+  { href: "#contact", label: "Contact" },
 ];
 
 export function SiteHeader({ home = false }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const header = useRef<HTMLElement>(null);
   const menu = useRef<HTMLElement>(null);
   const toggle = useRef<HTMLButtonElement>(null);
   const hrefFor = (hash: string) => (home ? hash : `/${hash}`);
@@ -65,12 +68,37 @@ export function SiteHeader({ home = false }: SiteHeaderProps) {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    const element = header.current;
+    if (!element) return;
+
+    const setHeaderHeight = () => {
+      document.documentElement.style.setProperty("--header-h", `${element.getBoundingClientRect().height}px`);
+    };
+    const observer = new ResizeObserver(setHeaderHeight);
+    observer.observe(element);
+    setHeaderHeight();
+
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--header-h");
+    };
+  }, []);
+
   return (
-    <header className={`site-header${menuOpen ? " is-menu-open" : ""}`}>
+    <header ref={header} className={`site-header${menuOpen ? " is-menu-open" : ""}`}>
       <a className="wordmark" href={hrefFor("#top")} onClick={closeMenu} aria-label="XYZ Innovations home">
         <span className="wordmark-mark">X</span>
         <span>XYZ Innovations</span>
       </a>
+
+      <nav className="desktop-nav" aria-label="Primary navigation">
+        {links.map((link) => (
+          <a href={hrefFor(link.href)} aria-current={link.href === "#top" ? "page" : undefined} onClick={closeMenu} key={link.href}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
 
       <button
         ref={toggle}
@@ -90,12 +118,10 @@ export function SiteHeader({ home = false }: SiteHeaderProps) {
         className={`main-nav${menuOpen ? " is-open" : ""}`}
         aria-label="Primary navigation"
       >
-        {links.map((link) => (
+        {links.filter((link) => link.href !== "#contact").map((link) => (
           <a href={hrefFor(link.href)} onClick={closeMenu} key={link.href}>{link.label}</a>
         ))}
-        <a href={hrefFor("#contact")} onClick={closeMenu} className="nav-contact">
-          Let&apos;s talk <ArrowUpRight size={15} />
-        </a>
+        <a href={hrefFor("#contact")} onClick={closeMenu} className="nav-contact">Let&apos;s talk <ArrowUpRight size={15} /></a>
       </nav>
     </header>
   );

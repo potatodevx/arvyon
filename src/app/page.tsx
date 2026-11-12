@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import {
   ArrowDown,
   ArrowUpRight,
@@ -12,13 +12,14 @@ import {
   Layers3,
   MoveRight,
   Plus,
-  Sparkles,
 } from "lucide-react";
 import { approachSteps, projects, services } from "@/data/content";
 import { useScrollProgress } from "@/hooks/use-scroll-progress";
 import { useScrollReveal } from "@/hooks/use-scroll-reveal";
 import { useStoryChapter } from "@/hooks/use-story-chapter";
+import { useWorkSpiral } from "@/hooks/use-work-spiral";
 import { MagneticLink } from "@/components/magnetic-link";
+import RotatingText from "@/components/rotating-text";
 import { CustomCursor } from "@/components/custom-cursor";
 import { HeroPreloader } from "@/components/hero-preloader";
 import { RibbonFallback } from "@/components/ribbon-fallback";
@@ -30,9 +31,24 @@ const SiteThreadScene = dynamic(() => import("@/components/site-thread-scene"), 
   loading: () => <RibbonFallback />,
 });
 
-const HeroThreadForm = dynamic(() => import("@/components/hero-thread-form"), {
+const DitherVeil = dynamic(() => import("@/components/DitherVeil"), {
   ssr: false,
-  loading: () => <div className="hero-form hero-form-fallback" aria-hidden="true" />,
+  loading: () => <div className="hero-dither-fallback" aria-hidden="true" />,
+});
+
+const FadeContent = dynamic(() => import("@/components/FadeContent"), {
+  ssr: false,
+  loading: () => <div className="hero-copy-content" />,
+});
+
+const ParticleText = dynamic(() => import("@/components/particle-text"), {
+  ssr: false,
+  loading: () => <div className="particle-text-fallback" aria-hidden="true">Future, formed.</div>,
+});
+
+const OrbitImages = dynamic(() => import("@/components/OrbitImages"), {
+  ssr: false,
+  loading: () => <div className="work-orbit-fallback" aria-hidden="true" />,
 });
 
 const serviceIcons = {
@@ -42,10 +58,12 @@ const serviceIcons = {
 };
 
 const manifestoWords = ["We", "make", "technology", "feel", "considered,", "not", "complicated."];
+const workOrbitImages = projects.map((project) => ({ src: project.image, alt: project.title }));
 
 export default function Home() {
   useScrollProgress();
   useScrollReveal();
+  useWorkSpiral();
   const chapter = useStoryChapter();
 
   return (
@@ -55,29 +73,51 @@ export default function Home() {
         <HeroPreloader />
         <CustomCursor />
         <div className="scroll-indicator" aria-hidden="true" />
-        <div className="site-thread" aria-hidden="true"><SiteThreadScene /></div>
+        <div className={`site-thread${chapter.number === "06" ? " is-complete" : ""}`} aria-hidden="true"><SiteThreadScene /></div>
         <SiteHeader home />
         <p className="chapter-indicator" aria-hidden="true"><span>{chapter.number}</span> / {chapter.label}</p>
 
         <main id="main-content" tabIndex={-1}>
         <section className="hero" id="top" data-chapter="0">
-          <HeroThreadForm threads={170} mobileThreads={110} />
+          <div className="hero-dither" data-reveal>
+            <DitherVeil
+              fit="contain"
+              pattern="floyd"
+              pixelSize={2}
+              inkColor="#281d1b"
+              paperColor="#f4ede3"
+              revealRadius={190}
+              softness={0.6}
+              linger={1}
+              rimColor="#941f31"
+              palette="duotone"
+              levels={2}
+              contrast={1.15}
+              brightness={0}
+              rim={0}
+              reverse={false}
+              wander={false}
+              clickBurst
+            />
+          </div>
           <div className="hero-copy">
-            <p className="eyebrow"><span /> Independent technology studio</p>
-            <h1 className="hero-title">
-              <span className="hero-line"><span>Ideas,</span></span>
-              <span className="hero-line hero-line-serif"><em>given form.</em></span>
-            </h1>
-            <p className="hero-intro">
-              XYZ Innovations turns ambitious concepts into clear, capable digital products and experiences.
-            </p>
-            <div className="hero-actions">
-              <a href="#work" className="button button-primary">Explore our work <MoveRight size={18} /></a>
-              <a href="#services" className="button button-quiet">What we do <ArrowDown size={17} /></a>
-            </div>
+            <FadeContent className="hero-copy-content" effect="mist" duration={1.8} ease="power2.out" stagger={0.1} threshold={0.1} trigger="mount">
+              <p className="eyebrow"><span /> Independent technology studio</p>
+              <h1 className="hero-title">
+                <span className="hero-line"><span>Ideas,</span></span>
+                <span className="hero-line hero-line-serif"><span><em>given form.</em></span></span>
+              </h1>
+              <p className="hero-intro">
+                Software, AI and digital products, engineered with craft.
+              </p>
+              <div className="hero-actions">
+                <a href="#work" className="button button-primary">Explore our work <MoveRight size={18} /></a>
+                <a href="#services" className="button button-quiet">What we do <ArrowDown size={17} /></a>
+              </div>
+            </FadeContent>
           </div>
 
-          <p className="scene-caption"><span className="caption-dot" /> Every idea starts as a loose thread.</p>
+          <p className="scene-caption"><span className="caption-dot" /> Interfaces begin as signals.</p>
           <a className="hero-scroll-cue" href="#manifesto" aria-label="Scroll to the point of view"><span aria-hidden="true" />Scroll</a>
         </section>
 
@@ -85,7 +125,7 @@ export default function Home() {
           <div className="section-label" data-reveal>
             <span>02</span><p>The point of view</p>
           </div>
-          <div className="manifesto-statement text-scrim" data-reveal>
+          <div className="manifesto-statement" data-reveal>
             <p className="display-copy" aria-label="We make technology feel considered, not complicated.">
               {manifestoWords.map((word, index) => (
                 <span className={word === "considered," ? "is-accent" : undefined} style={{ "--word-index": index } as CSSProperties} key={word}>
@@ -115,13 +155,39 @@ export default function Home() {
         </section>
 
         <section className="work-section section" id="work" data-chapter="2">
-          <div className="section-heading text-scrim" data-reveal>
+          <div className="section-heading" data-reveal>
             <div className="section-label"><span>03</span><p>The proof</p></div>
             <h2>Proof lives in<br /><em>the details.</em></h2>
             <p>Every turn of the thread is a decision made clearer, kinder, and easier to use.</p>
           </div>
 
-          <div className="work-list" aria-label="Selected project case studies">
+          <div className="work-list" data-work-spiral aria-label="Selected project case studies">
+            <div className="work-orbit-showcase" aria-hidden="true">
+              <OrbitImages
+                images={workOrbitImages}
+                altPrefix="Project preview"
+                shape="ellipse"
+                baseWidth={1080}
+                radiusX={435}
+                radiusY={122}
+                rotation={-7}
+                duration={30}
+                itemSize={164}
+                direction="reverse"
+                showPath
+                pathColor="rgba(148,31,49,0.22)"
+                pathWidth={1}
+                fill
+                depth={0.34}
+                itemRadius={18}
+                shadow={0.18}
+                hoverScale={1}
+                draggable={false}
+                clickToFront={false}
+                intro
+                centerContent={<p className="work-orbit-label"><span>Selected work</span>03 cases</p>}
+              />
+            </div>
             {projects.map((project, index) => (
               <article className={`project-card project-${project.accent}`} key={project.slug} data-reveal>
                 <div className="project-visual">
@@ -148,9 +214,27 @@ export default function Home() {
         </section>
 
         <section className="services-section section" id="services" data-chapter="3">
-          <div className="services-intro text-scrim" data-reveal>
+          <div className="services-intro" data-reveal>
             <div className="section-label"><span>04</span><p>The craft</p></div>
-            <h2>From first<br />signal to <em>scale.</em></h2>
+            <h2>
+              From first<br />
+              <RotatingText
+                texts={["signal", "prototype", "system"]}
+                effect="slide"
+                direction="up"
+                highlight
+                highlightColor="#941f31"
+                staggerFrom="last"
+                staggerDuration={0.025}
+                splitLevelClassName="overflow-hidden"
+                rotationInterval={2200}
+                splitBy="characters"
+                blur={0}
+                auto
+                loop
+                pauseOnHover={false}
+              /> {" "}to <em>scale.</em>
+            </h2>
           </div>
           <div className="service-list">
             {services.map((service) => {
@@ -173,7 +257,7 @@ export default function Home() {
         <section className="approach-section section" id="approach" data-chapter="4">
           <div className="approach-orbit" aria-hidden="true"><span /><span /><span /></div>
           <div className="section-label" data-reveal><span>05</span><p>The method</p></div>
-          <div className="approach-layout text-scrim">
+          <div className="approach-layout">
             <h2 data-reveal>Built with<br /><em>clarity.</em></h2>
             <div className="approach-steps" data-reveal>
               {approachSteps.map((step) => (
@@ -185,15 +269,41 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="contact-section section" id="contact" data-chapter="5">
-          <div className="contact-signal" aria-hidden="true"><Sparkles size={38} strokeWidth={1.1} /></div>
+      <section className="contact-section section" id="contact" data-chapter="5">
+        <div className="contact-content">
           <p className="eyebrow" data-reveal><span /> The result</p>
-          <h2 data-reveal>Let&apos;s build<br /><em>what&apos;s next.</em></h2>
-          <p className="contact-copy" data-reveal>Have a problem worth solving? Share the shape of it and we&apos;ll find a way forward.</p>
-          <MagneticLink href="mailto:hello@xyzinnovations.com" className="contact-email" data-reveal>
-            hello@xyzinnovations.com <ArrowUpRight size={25} />
-          </MagneticLink>
-          <p className="contact-note" data-reveal>A thoughtful first note is enough to begin.</p>
+            <h2 data-reveal>Let&apos;s build<br /><em>what&apos;s next.</em></h2>
+            <p className="contact-copy" data-reveal>Have a problem worth solving? Share the shape of it and we&apos;ll find a way forward.</p>
+            <MagneticLink href="mailto:hello@xyzinnovations.com" className="contact-email" data-reveal>
+              hello@xyzinnovations.com <ArrowUpRight size={25} />
+            </MagneticLink>
+            <p className="contact-note" data-reveal>A thoughtful first note is enough to begin.</p>
+          </div>
+          <div className="contact-particle-stage" data-reveal>
+            <ParticleText
+              text="Future, formed."
+              particleSize={1.9}
+              density={5}
+              color="currentColor"
+              highlightColor="#941f31"
+              highlightMode="motion"
+              shape="circle"
+              intro="gather"
+              scatter={190}
+              gatherDuration={1600}
+              stagger={420}
+              clickBurst
+              burstStrength={1}
+              pointerRepel={34}
+              repelRadius={110}
+              idleDrift={0}
+              trigger="mount"
+              fontSize="clamp(3rem, 7.4vw, 7.2rem)"
+              fontWeight={800}
+              fontFamily="inherit"
+              glow={false}
+            />
+          </div>
         </section>
 
         </main>

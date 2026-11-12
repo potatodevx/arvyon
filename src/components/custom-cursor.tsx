@@ -19,11 +19,12 @@ export function CustomCursor() {
     let ringY = targetY;
     const draw = () => {
       frame = 0;
-      ringX += (targetX - ringX) * 0.16;
-      ringY += (targetY - ringY) * 0.16;
+      // Keep a small amount of trailing motion without making the cursor feel late.
+      ringX += (targetX - ringX) * 0.42;
+      ringY += (targetY - ringY) * 0.42;
       dot.current?.style.setProperty("transform", `translate3d(${targetX}px, ${targetY}px, 0) translate(-50%, -50%)`);
       ring.current?.style.setProperty("transform", `translate3d(${ringX}px, ${ringY}px, 0) translate(-50%, -50%)`);
-      if (Math.abs(targetX - ringX) > 0.15 || Math.abs(targetY - ringY) > 0.15) frame = window.requestAnimationFrame(draw);
+      if (Math.abs(targetX - ringX) > 0.5 || Math.abs(targetY - ringY) > 0.5) frame = window.requestAnimationFrame(draw);
     };
     const requestDraw = () => {
       if (!frame) frame = window.requestAnimationFrame(draw);
